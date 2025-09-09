@@ -64,7 +64,10 @@ log_debug() { log "DEBUG" "$@"; }
 check_rate_limit() {
     local key="$1"
     local limit_seconds="${2:-300}"
-    local rate_file="${RATE_LIMIT_DIR}/${key}"
+    
+    # Sanitize key for filename
+    local sanitized_key=$(echo "$key" | sed 's/[^a-zA-Z0-9._-]/_/g')
+    local rate_file="${RATE_LIMIT_DIR}/${sanitized_key}"
     
     mkdir -p "$RATE_LIMIT_DIR"
     
@@ -343,7 +346,7 @@ send_ssh_alert() {
     local ssh_user=$(echo "$connection_info" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('ssh_user', ''))")
     
     # Fix username if it's None or unknown
-    if [[ "$username" == "None" || "$username" == "unknown" || -z "$username" ]]; then
+    if [[ "$username" == "None" || "$username" == "unknown" || -z "$username" || "$username" == "null" ]]; then
         username=$(whoami)
     fi
     
