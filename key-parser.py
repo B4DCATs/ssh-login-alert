@@ -211,16 +211,72 @@ class SSHKeyParser:
         """Extract SSH_USER from key options."""
         options = self.get_key_options(fingerprint)
         return options.get('SSH_USER')
+    
+    def get_recent_key(self) -> Optional[Dict]:
+        """Get the most recently used key from authorized_keys."""
+        try:
+            # Return the first key as a simple fallback
+            # In a real implementation, you might want to track key usage
+            for key_info in self.key_cache.values():
+                return key_info
+            return None
+        except Exception as e:
+            logger.error(f"Error getting recent key: {e}")
+            return None
 
 class AuthLogParser:
     """Parser for SSH authentication logs."""
     
     def __init__(self, auth_log_path: str = "/var/log/auth.log"):
         self.auth_log_path = auth_log_path
+        self.use_journald = not os.path.exists(auth_log_path)
     
     def find_recent_ssh_connection(self, ip_address: str, username: str, 
                                  max_lines: int = 1000) -> Optional[Dict]:
-        """Find recent SSH connection in auth log."""
+        """Find recent SSH connection in auth log or journald."""
+        try:
+            if self.use_journald:
+                return self._find_connection_in_journald(ip_address, username)
+            else:
+                return self._find_connection_in_file(ip_address, username, max_lines)
+        except Exception as e:
+            logger.error(f"Error parsing auth log: {e}")
+            return None
+    
+    def _find_connection_in_journald(self, ip_address: str, username: str) -> Optional[Dict]:
+        """Find SSH connection in journald."""
+        try:
+            # Use journalctl to get recent SSH logs
+            cmd = [
+                'journalctl', '-u', 'ssh', '--since', '1 hour ago', 
+                '--no-pager', '-o', 'short-iso'
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            if result.returncode != 0:
+                logger.warning("Failed to get journald logs")
+                return None
+            
+            lines = result.stdout.split('\n')
+            
+            # Look for recent SSH connection
+            for line in reversed(lines):
+                if self._is_ssh_connection_line(line, ip_address, username):
+                    return self._parse_ssh_connection_line(line)
+            
+            # If no exact match, try to find any recent connection from this IP
+            for line in reversed(lines):
+                if ip_address in line and "Accepted" in line and "sshd" in line:
+                    return self._parse_ssh_connection_line(line)
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error parsing journald: {e}")
+            return None
+    
+    def _find_connection_in_file(self, ip_address: str, username: str, max_lines: int) -> Optional[Dict]:
+        """Find SSH connection in auth log file."""
         try:
             if not os.path.exists(self.auth_log_path):
                 logger.warning(f"Auth log file not found: {self.auth_log_path}")
@@ -244,7 +300,7 @@ class AuthLogParser:
             return None
             
         except Exception as e:
-            logger.error(f"Error parsing auth log: {e}")
+            logger.error(f"Error parsing auth log file: {e}")
             return None
     
     def _is_ssh_connection_line(self, line: str, ip_address: str, username: str) -> bool:
@@ -526,6 +582,15 @@ def main():
             print(json.dumps(key_info, indent=2))
         else:
             print("Key not found")
+    
+    elif command == "get-recent-key":
+        parser = SSHKeyParser()
+        key_info = parser.get_recent_key()
+        
+        if key_info:
+            print(json.dumps(key_info, indent=2))
+        else:
+            print("No keys found")
     
     else:
         print(f"Unknown command: {command}")

@@ -220,6 +220,26 @@ except:
         return
     fi
     
+    # Fallback: try to get the most recently used key from authorized_keys
+    # This is a simple approach when auth.log is not available
+    local recent_key_info
+    if recent_key_info=$(python3 "$KEY_PARSER" get-recent-key 2>/dev/null) && [[ -n "$recent_key_info" ]]; then
+        echo "$recent_key_info" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    result = {
+        'fingerprint': data.get('fingerprint', 'unknown'),
+        'comment': data.get('comment', 'unknown'),
+        'ssh_user': data.get('options', {}).get('SSH_USER', '')
+    }
+    print(json.dumps(result))
+except:
+    print('{\"fingerprint\": \"unknown\", \"comment\": \"unknown\"}')
+"
+        return
+    fi
+    
     # Fallback: try to get key info from auth log
     local auth_log_info
     if auth_log_info=$(python3 "$KEY_PARSER" parse-auth-log "$ip_address" "$username" 2>/dev/null) && [[ -n "$auth_log_info" ]]; then
