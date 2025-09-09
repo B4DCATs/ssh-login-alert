@@ -96,9 +96,9 @@ class SSHKeyParser:
             # Decode base64 key data
             key_bytes = base64.b64decode(key_data)
             
-            # Generate MD5 fingerprint (OpenSSH style)
-            md5_hash = hashlib.md5(key_bytes).hexdigest()
-            fingerprint = ':'.join([md5_hash[i:i+2] for i in range(0, len(md5_hash), 2)])
+            # Generate SHA256 fingerprint (modern OpenSSH style)
+            sha256_hash = hashlib.sha256(key_bytes).digest()
+            fingerprint = base64.b64encode(sha256_hash).decode('ascii').rstrip('=')
             
             return fingerprint
             
