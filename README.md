@@ -32,11 +32,18 @@ cd ssh-alert
 sudo ./install.sh
 ```
 
+### Автоматическая установка
+
+```bash
+# Скачать и установить одной командой
+curl -sSL https://raw.githubusercontent.com/your-repo/ssh-alert/main/install.sh | sudo bash
+```
+
 ### Ручная установка
 
 1. **Скопируйте файлы**:
    ```bash
-   sudo mkdir -p /opt/ssh-alert
+   sudo mkdir -p /opt/ssh-alert /etc/ssh-alert
    sudo cp ssh-alert-enhanced.sh /opt/ssh-alert/
    sudo cp key-parser.py /opt/ssh-alert/
    sudo cp config.conf /etc/ssh-alert/
@@ -46,9 +53,13 @@ sudo ./install.sh
 
 2. **Настройте SSH**:
    ```bash
-   sudo cp /etc/ssh/sshrc /etc/ssh/sshrc.backup
+   sudo cp /etc/ssh/sshrc /etc/ssh/sshrc.backup 2>/dev/null || true
    sudo tee /etc/ssh/sshrc > /dev/null << 'EOF'
    #!/bin/bash
+   # SSH Alert Integration
+   if [ -n "${SSH_ALERT_DISABLED:-}" ]; then
+       exit 0
+   fi
    /opt/ssh-alert/ssh-alert-enhanced.sh &
    EOF
    sudo chmod +x /etc/ssh/sshrc
@@ -57,6 +68,11 @@ sudo ./install.sh
 3. **Настройте конфигурацию**:
    ```bash
    sudo nano /etc/ssh-alert/config.conf
+   ```
+
+4. **Перезапустите SSH** (если нужно):
+   ```bash
+   sudo systemctl restart sshd
    ```
 
 ## ⚙️ Конфигурация
@@ -125,8 +141,33 @@ sudo /opt/ssh-alert/ssh-alert-enhanced.sh
 # Настройка ключей
 sudo ./setup-authorized-keys.sh
 
+# Диагностика проблем
+sudo ./debug-keys.sh
+
 # Удаление
 sudo /opt/ssh-alert/uninstall.sh
+```
+
+### Управление через Makefile
+
+```bash
+# Установка
+make install
+
+# Тестирование
+make test
+
+# Исправление проблем
+make fix
+
+# Просмотр логов
+make logs
+
+# Удаление
+make uninstall
+
+# Показать все команды
+make help
 ```
 
 ### Типы уведомлений
@@ -260,6 +301,16 @@ sudo tail -f /var/log/ssh-alert.log | jq '.'
 
 ## 🔄 Обновление
 
+### Автоматическое обновление
+
+```bash
+# Обновить из репозитория
+git pull origin main
+sudo ./install.sh
+```
+
+### Ручное обновление
+
 ```bash
 # Создайте резервную копию
 sudo cp -r /opt/ssh-alert /opt/ssh-alert.backup
@@ -268,9 +319,49 @@ sudo cp /etc/ssh-alert/config.conf /etc/ssh-alert/config.conf.backup
 # Обновите файлы
 sudo cp ssh-alert-enhanced.sh /opt/ssh-alert/
 sudo cp key-parser.py /opt/ssh-alert/
+sudo cp uninstall.sh /opt/ssh-alert/
 
 # Перезапустите службу (если используется)
 sudo systemctl restart ssh-alert
+```
+
+## 🗑️ Удаление
+
+### Полное удаление
+
+```bash
+# Запустите скрипт удаления
+sudo /opt/ssh-alert/uninstall.sh
+
+# Или через Makefile
+make uninstall
+```
+
+### Что удаляется
+
+- ✅ Все файлы SSH Alert
+- ✅ SSH интеграция из `/etc/ssh/sshrc`
+- ✅ Systemd служба
+- ✅ Конфигурация ротации логов
+- ✅ Временные файлы и кэш
+- ✅ Создаются резервные копии
+
+### Ручное удаление
+
+```bash
+# Остановить процессы
+sudo pkill -f ssh-alert
+
+# Удалить файлы
+sudo rm -rf /opt/ssh-alert
+sudo rm -rf /etc/ssh-alert
+
+# Очистить SSH интеграцию
+sudo rm -f /etc/ssh/sshrc
+
+# Удалить временные файлы
+sudo rm -f /tmp/ssh-alert.lock
+sudo rm -rf /tmp/ssh-alert-rate-limit
 ```
 
 ## 📝 Лицензия

@@ -298,58 +298,17 @@ test_configuration() {
     print_success "Configuration test passed"
 }
 
-# Create uninstall script
-create_uninstall_script() {
-    print_info "Creating uninstall script..."
+# Copy uninstall script
+copy_uninstall_script() {
+    print_info "Copying uninstall script..."
     
-    cat > "$INSTALL_DIR/uninstall.sh" << 'EOF'
-#!/bin/bash
-# SSH Alert Uninstall Script
-
-set -euo pipefail
-
-print_info() { echo -e "\033[0;34m[INFO]\033[0m $1"; }
-print_success() { echo -e "\033[0;32m[SUCCESS]\033[0m $1"; }
-print_warning() { echo -e "\033[1;33m[WARNING]\033[0m $1"; }
-
-print_info "Uninstalling SSH Alert..."
-
-# Remove SSH configuration
-if [[ -f "/etc/ssh/sshrc" ]]; then
-    print_info "Removing SSH configuration..."
-    rm -f "/etc/ssh/sshrc"
-fi
-
-# Remove systemd service
-if [[ -f "/etc/systemd/system/ssh-alert.service" ]]; then
-    print_info "Removing systemd service..."
-    systemctl stop ssh-alert 2>/dev/null || true
-    systemctl disable ssh-alert 2>/dev/null || true
-    rm -f "/etc/systemd/system/ssh-alert.service"
-    systemctl daemon-reload
-fi
-
-# Remove log rotation
-if [[ -f "/etc/logrotate.d/ssh-alert" ]]; then
-    print_info "Removing log rotation configuration..."
-    rm -f "/etc/logrotate.d/ssh-alert"
-fi
-
-# Remove files
-print_info "Removing SSH Alert files..."
-rm -rf "/opt/ssh-alert"
-rm -rf "/etc/ssh-alert"
-
-# Remove temporary files
-rm -f "/tmp/ssh-alert.lock"
-rm -rf "/tmp/ssh-alert-rate-limit"
-
-print_success "SSH Alert uninstalled successfully"
-EOF
-    
-    chmod +x "$INSTALL_DIR/uninstall.sh"
-    
-    print_success "Uninstall script created"
+    if [[ -f "uninstall.sh" ]]; then
+        cp "uninstall.sh" "$INSTALL_DIR/"
+        chmod +x "$INSTALL_DIR/uninstall.sh"
+        print_success "Uninstall script copied"
+    else
+        print_warning "Uninstall script not found in current directory"
+    fi
 }
 
 # Main installation function
@@ -367,7 +326,7 @@ main() {
     setup_log_rotation
     interactive_config
     test_configuration
-    create_uninstall_script
+    copy_uninstall_script
     
     echo
     print_success "SSH Alert installation completed successfully!"

@@ -14,7 +14,17 @@ install:
 # Uninstallation
 uninstall:
 	@echo "Uninstalling SSH Alert..."
-	sudo /opt/ssh-alert/uninstall.sh
+	@if [ -f "/opt/ssh-alert/uninstall.sh" ]; then \
+		sudo /opt/ssh-alert/uninstall.sh; \
+	else \
+		echo "Uninstall script not found. Running manual cleanup..."; \
+		sudo pkill -f ssh-alert 2>/dev/null || true; \
+		sudo rm -rf /opt/ssh-alert /etc/ssh-alert; \
+		sudo rm -f /etc/ssh/sshrc; \
+		sudo rm -f /tmp/ssh-alert.lock; \
+		sudo rm -rf /tmp/ssh-alert-rate-limit; \
+		echo "Manual cleanup completed"; \
+	fi
 
 # Test configuration
 test:
@@ -45,7 +55,21 @@ show-config:
 # View logs
 logs:
 	@echo "Viewing SSH Alert logs..."
-	sudo tail -f /var/log/ssh-alert.log
+	@if [ -f "/var/log/ssh-alert.log" ]; then \
+		sudo tail -f /var/log/ssh-alert.log; \
+	else \
+		echo "Log file not found. Check if SSH Alert is installed."; \
+	fi
+
+# Debug keys
+debug:
+	@echo "Running key detection debug..."
+	sudo ./debug-keys.sh
+
+# Setup keys
+setup-keys:
+	@echo "Setting up authorized keys..."
+	sudo ./setup-authorized-keys.sh
 
 # Clean temporary files
 clean:
@@ -89,6 +113,7 @@ help:
 	@echo "  test            - Test configuration and scripts"
 	@echo "  fix             - Fix installation issues"
 	@echo "  setup-keys      - Setup authorized keys with SSH_USER"
+	@echo "  debug           - Debug key detection issues"
 	@echo "  show-config     - Show current configuration"
 	@echo "  logs            - View SSH Alert logs in real-time"
 	@echo "  clean           - Clean temporary files"
