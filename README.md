@@ -25,25 +25,18 @@
 
 ```bash
 # Клонируйте репозиторий
-git clone <repository-url>
-cd ssh-alert
+git clone https://github.com/B4DCATs/ssh-login-alert
+cd ssh-login-alert
 
 # Запустите установку
 sudo ./install.sh
-```
-
-### Автоматическая установка
-
-```bash
-# Скачать и установить одной командой
-curl -sSL https://raw.githubusercontent.com/your-repo/ssh-alert/main/install.sh | sudo bash
 ```
 
 **После установки репозиторий можно удалить:**
 ```bash
 # После успешной установки
 cd ..
-rm -rf ssh-alert
+rm -rf ssh-login-alert
 ```
 
 ### Что происходит при установке
