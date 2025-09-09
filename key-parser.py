@@ -109,6 +109,34 @@ class SSHKeyParser:
         """Find key information by fingerprint."""
         return self.key_cache.get(fingerprint)
     
+    def find_key_by_ip_and_user(self, ip_address: str, username: str) -> Optional[Dict]:
+        """Find key information by IP and username from recent connections."""
+        try:
+            # Try to find recent connection in auth log
+            auth_parser = AuthLogParser()
+            connection_info = auth_parser.find_recent_ssh_connection(ip_address, username)
+            
+            if connection_info and connection_info.get('fingerprint') != 'unknown':
+                return self.find_key_by_fingerprint(connection_info['fingerprint'])
+            
+            # If no fingerprint found, try to get the most recent key used
+            # This is a fallback method
+            if os.path.exists(self.authorized_keys_path):
+                with open(self.authorized_keys_path, 'r') as f:
+                    lines = f.readlines()
+                    # Return the first key as fallback
+                    for line in lines:
+                        if line.strip() and not line.startswith('#'):
+                            key_info = self._parse_authorized_key_line(line.strip())
+                            if key_info:
+                                return key_info
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error finding key by IP and user: {e}")
+            return None
+    
     def get_key_comment(self, fingerprint: str) -> str:
         """Get comment for a key by fingerprint."""
         key_info = self.find_key_by_fingerprint(fingerprint)
@@ -152,6 +180,11 @@ class AuthLogParser:
                 if self._is_ssh_connection_line(line, ip_address, username):
                     return self._parse_ssh_connection_line(line)
             
+            # If no exact match, try to find any recent connection from this IP
+            for line in reversed(recent_lines):
+                if ip_address in line and "Accepted" in line and "sshd" in line:
+                    return self._parse_ssh_connection_line(line)
+            
             return None
             
         except Exception as e:
@@ -182,10 +215,21 @@ class AuthLogParser:
         }
         
         try:
-            # Extract fingerprint if present
-            fingerprint_match = re.search(r'RSA SHA256:([A-Za-z0-9+/=]+)', line)
-            if fingerprint_match:
-                result['fingerprint'] = fingerprint_match.group(1)
+            # Extract fingerprint if present (various formats)
+            fingerprint_patterns = [
+                r'RSA SHA256:([A-Za-z0-9+/=]+)',
+                r'ED25519 SHA256:([A-Za-z0-9+/=]+)',
+                r'ECDSA SHA256:([A-Za-z0-9+/=]+)',
+                r'DSA SHA256:([A-Za-z0-9+/=]+)',
+                r'key fingerprint ([a-f0-9:]+)',
+                r'fingerprint ([a-f0-9:]+)'
+            ]
+            
+            for pattern in fingerprint_patterns:
+                fingerprint_match = re.search(pattern, line)
+                if fingerprint_match:
+                    result['fingerprint'] = fingerprint_match.group(1)
+                    break
             
             # Extract key type
             key_type_match = re.search(r'(RSA|ECDSA|ED25519|DSA)', line)
@@ -345,6 +389,7 @@ def main():
         print("  get-info - Get current SSH connection info")
         print("  find-key <fingerprint> - Find key by fingerprint")
         print("  parse-auth-log <ip> <username> - Parse auth log for connection")
+        print("  find-key-by-connection <ip> <username> - Find key by connection info")
         sys.exit(1)
     
     command = sys.argv[1]
@@ -383,6 +428,22 @@ def main():
             print(json.dumps(connection_info, indent=2))
         else:
             print("Connection not found in auth log")
+    
+    elif command == "find-key-by-connection":
+        if len(sys.argv) < 4:
+            print("Error: IP address and username required")
+            sys.exit(1)
+        
+        ip_address = sys.argv[2]
+        username = sys.argv[3]
+        
+        parser = SSHKeyParser()
+        key_info = parser.find_key_by_ip_and_user(ip_address, username)
+        
+        if key_info:
+            print(json.dumps(key_info, indent=2))
+        else:
+            print("Key not found")
     
     else:
         print(f"Unknown command: {command}")

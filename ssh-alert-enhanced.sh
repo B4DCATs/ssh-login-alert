@@ -201,15 +201,33 @@ get_key_info() {
         return
     fi
     
-    # Try to get key info from auth log
+    # Try to get key info using the new method
+    local key_info
+    if key_info=$(python3 "$KEY_PARSER" find-key-by-connection "$ip_address" "$username" 2>/dev/null) && [[ -n "$key_info" ]]; then
+        echo "$key_info" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    result = {
+        'fingerprint': data.get('fingerprint', 'unknown'),
+        'comment': data.get('comment', 'unknown'),
+        'ssh_user': data.get('options', {}).get('SSH_USER', '')
+    }
+    print(json.dumps(result))
+except:
+    print('{\"fingerprint\": \"unknown\", \"comment\": \"unknown\"}')
+"
+        return
+    fi
+    
+    # Fallback: try to get key info from auth log
     local auth_log_info
-    if auth_log_info=$(python3 "$KEY_PARSER" parse-auth-log "$ip_address" "$username" 2>/dev/null); then
-        local fingerprint=$(echo "$auth_log_info" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('fingerprint', 'unknown'))")
+    if auth_log_info=$(python3 "$KEY_PARSER" parse-auth-log "$ip_address" "$username" 2>/dev/null) && [[ -n "$auth_log_info" ]]; then
+        local fingerprint=$(echo "$auth_log_info" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('fingerprint', 'unknown'))" 2>/dev/null || echo "unknown")
         
         if [[ "$fingerprint" != "unknown" ]]; then
             # Try to find key in authorized_keys
-            local key_info
-            if key_info=$(python3 "$KEY_PARSER" find-key "$fingerprint" 2>/dev/null); then
+            if key_info=$(python3 "$KEY_PARSER" find-key "$fingerprint" 2>/dev/null) && [[ -n "$key_info" ]]; then
                 echo "$key_info" | python3 -c "
 import sys, json
 try:
