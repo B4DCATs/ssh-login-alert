@@ -26,6 +26,7 @@ class SSHKeyParser:
     
     def __init__(self, authorized_keys_path: str = "/root/.ssh/authorized_keys"):
         self.authorized_keys_path = authorized_keys_path
+        self.auth_log_path = "/var/log/auth.log"  # Add this line
         self.key_cache = {}
         self._load_authorized_keys()
     
@@ -144,12 +145,35 @@ class SSHKeyParser:
                                 if found_key:
                                     return found_key
             
-            # Method 2: If still no key found, return None instead of fallback
-            # This prevents showing wrong key information
-            return None
+            # Method 3: If no auth.log, try to determine key from SSH environment
+            # This is a fallback when auth.log is not available
+            return self._find_key_from_ssh_environment()
             
         except Exception as e:
             logger.error(f"Error finding key by IP and user: {e}")
+            return None
+    
+    def _find_key_from_ssh_environment(self) -> Optional[Dict]:
+        """Try to find key information from SSH environment variables."""
+        try:
+            # Check if we have SSH key fingerprint in environment
+            ssh_key_fingerprint = os.environ.get('SSH_KEY_FINGERPRINT')
+            if ssh_key_fingerprint:
+                return self.find_key_by_fingerprint(ssh_key_fingerprint)
+            
+            # Check if we have SSH key comment in environment
+            ssh_key_comment = os.environ.get('SSH_KEY_COMMENT')
+            if ssh_key_comment:
+                # Try to find key by comment
+                for key_info in self.key_cache.values():
+                    if key_info.get('comment') == ssh_key_comment:
+                        return key_info
+            
+            # If no environment info, return None to avoid showing wrong key
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error finding key from SSH environment: {e}")
             return None
     
     def _find_key_by_data(self, key_data: str) -> Optional[Dict]:
