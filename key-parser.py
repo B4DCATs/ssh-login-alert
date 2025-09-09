@@ -268,7 +268,7 @@ class AuthLogParser:
             
             # If no exact match, try to find any recent connection from this IP
             for line in reversed(lines):
-                if line.strip() and ip_address in line and "Accepted" in line and "sshd" in line:
+                if line.strip() and ip_address in line and "Accepted" in line and ("ssh2" in line or "sshd" in line):
                     logger.debug(f"Found SSH connection by IP: {line}")
                     return self._parse_ssh_connection_line(line)
             
@@ -319,6 +319,10 @@ class AuthLogParser:
         for pattern in patterns:
             if re.search(pattern, line):
                 return True
+        
+        # Also check for any accepted connection from this IP (fallback)
+        if ip_address in line and "Accepted" in line and ("ssh2" in line or "sshd" in line):
+            return True
         
         return False
     
