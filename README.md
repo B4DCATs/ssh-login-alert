@@ -39,7 +39,22 @@ sudo ./install.sh
 curl -sSL https://raw.githubusercontent.com/your-repo/ssh-alert/main/install.sh | sudo bash
 ```
 
-### Ручная установка
+**После установки репозиторий можно удалить:**
+```bash
+# После успешной установки
+cd ..
+rm -rf ssh-alert
+```
+
+### Что происходит при установке
+
+1. **Копируются файлы** в `/opt/ssh-alert/` и `/etc/ssh-alert/`
+2. **Настраивается SSH** интеграция через `/etc/ssh/sshrc`
+3. **Создается конфигурация** ротации логов
+4. **Запускается интерактивная настройка** Telegram
+5. **Тестируется конфигурация**
+
+### Ручная установка (если нужно)
 
 1. **Скопируйте файлы**:
    ```bash
@@ -47,13 +62,13 @@ curl -sSL https://raw.githubusercontent.com/your-repo/ssh-alert/main/install.sh 
    sudo cp ssh-alert-enhanced.sh /opt/ssh-alert/
    sudo cp key-parser.py /opt/ssh-alert/
    sudo cp config.conf /etc/ssh-alert/
+   sudo cp logrotate.conf /etc/logrotate.d/ssh-alert
    sudo chmod +x /opt/ssh-alert/*.sh
    sudo chmod +x /opt/ssh-alert/*.py
    ```
 
 2. **Настройте SSH**:
    ```bash
-   sudo cp /etc/ssh/sshrc /etc/ssh/sshrc.backup 2>/dev/null || true
    sudo tee /etc/ssh/sshrc > /dev/null << 'EOF'
    #!/bin/bash
    # SSH Alert Integration
@@ -68,11 +83,6 @@ curl -sSL https://raw.githubusercontent.com/your-repo/ssh-alert/main/install.sh 
 3. **Настройте конфигурацию**:
    ```bash
    sudo nano /etc/ssh-alert/config.conf
-   ```
-
-4. **Перезапустите SSH** (если нужно):
-   ```bash
-   sudo systemctl restart sshd
    ```
 
 ## ⚙️ Конфигурация
@@ -138,41 +148,13 @@ sudo tail -f /var/log/ssh-alert.log
 # Тестирование конфигурации
 sudo /opt/ssh-alert/ssh-alert-enhanced.sh
 
-# Настройка ключей
-sudo ./setup-authorized-keys.sh
-
-# Диагностика проблем
-sudo ./debug-keys.sh
+# Управление логами
+sudo /opt/ssh-alert/check-log-rotation.sh status    # Проверить статус ротации
+sudo /opt/ssh-alert/check-log-rotation.sh test      # Тестировать конфигурацию
+sudo /opt/ssh-alert/check-log-rotation.sh rotate    # Принудительная ротация
 
 # Удаление
 sudo /opt/ssh-alert/uninstall.sh
-```
-
-### Управление через Makefile
-
-```bash
-# Установка
-make install
-
-# Тестирование
-make test
-
-# Исправление проблем
-make fix
-
-# Просмотр логов
-make logs
-
-# Управление логами
-make check-logs      # Проверить статус ротации
-make test-logs       # Тестировать конфигурацию ротации
-make rotate-logs     # Принудительная ротация
-
-# Удаление
-make uninstall
-
-# Показать все команды
-make help
 ```
 
 ### Типы уведомлений
@@ -187,12 +169,12 @@ SSH Alert различает следующие типы подключений:
 
 ```
 🔐 SSH Login Alert:
-User: root
-Person: alice@example.com
+Host IP: 203.0.113.1 / 192.168.1.100
 Host: server01.example.com
-IP: 103.75.127.215
+Person: alice@example.com
+IP: 198.51.100.50
 Type: Interactive shell
-Key: a1:b2:c3:d4:e5:f6...
+Key: SHA256:abcd1234...
 Time: 2024-01-15 14:30:25 UTC
 ```
 
@@ -351,9 +333,8 @@ sudo cp /etc/ssh-alert/config.conf /etc/ssh-alert/config.conf.backup
 sudo cp ssh-alert-enhanced.sh /opt/ssh-alert/
 sudo cp key-parser.py /opt/ssh-alert/
 sudo cp uninstall.sh /opt/ssh-alert/
-
-# Перезапустите службу (если используется)
-sudo systemctl restart ssh-alert
+sudo cp check-log-rotation.sh /opt/ssh-alert/
+sudo cp logrotate.conf /etc/logrotate.d/ssh-alert
 ```
 
 ## 🗑️ Удаление
@@ -363,9 +344,6 @@ sudo systemctl restart ssh-alert
 ```bash
 # Запустите скрипт удаления
 sudo /opt/ssh-alert/uninstall.sh
-
-# Или через Makefile
-make uninstall
 ```
 
 ### Что удаляется

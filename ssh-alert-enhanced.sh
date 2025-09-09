@@ -413,6 +413,37 @@ send_ssh_alert() {
         full_server_name="${server_name}.${server_domain}"
     fi
     
+    # Get server IP addresses (external and local)
+    local external_ip=""
+    local local_ip=""
+    
+    # Get external IP
+    if command -v curl >/dev/null 2>&1; then
+        external_ip=$(curl -s --connect-timeout 5 --max-time 10 ifconfig.me 2>/dev/null || curl -s --connect-timeout 5 --max-time 10 ifconfig.co 2>/dev/null || curl -s --connect-timeout 5 --max-time 10 icanhazip.com 2>/dev/null)
+    elif command -v wget >/dev/null 2>&1; then
+        external_ip=$(wget -qO- --timeout=10 ifconfig.me 2>/dev/null || wget -qO- --timeout=10 ifconfig.co 2>/dev/null)
+    fi
+    
+    # Get local IP
+    if command -v hostname >/dev/null 2>&1 && hostname -I >/dev/null 2>&1; then
+        local_ip=$(hostname -I | awk '{print $1}')
+    elif command -v ip >/dev/null 2>&1; then
+        local_ip=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' | head -1)
+    elif command -v ifconfig >/dev/null 2>&1; then
+        local_ip=$(ifconfig | grep -oP 'inet \K(?:[0-9]{1,3}\.){3}[0-9]{1,3}' | grep -v '127.0.0.1' | head -1)
+    fi
+    
+    # Fallback for local IP
+    if [[ -z "$local_ip" ]]; then
+        local_ip="127.0.0.1"
+    fi
+    
+    # Format server IPs
+    local server_ip="$local_ip"
+    if [[ -n "$external_ip" && "$external_ip" != "$local_ip" ]]; then
+        server_ip="$external_ip / $local_ip"
+    fi
+    
     local person_info=""
     if [[ -n "$key_comment" && "$key_comment" != "unknown" ]]; then
         person_info="$key_comment"
@@ -421,9 +452,9 @@ send_ssh_alert() {
     fi
     
     local message="🔐 *SSH Login Alert:*
-*User:* \`$username\`
-*Person:* \`$person_info\`
+*Host IP:* \`$server_ip\`
 *Host:* \`$full_server_name\`
+*Person:* \`$person_info\`
 *IP:* \`$ip_address\`
 *Type:* \`$connection_type\`
 *Key:* \`${key_fingerprint:0:16}...\`
