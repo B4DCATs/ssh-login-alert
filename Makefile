@@ -71,6 +71,21 @@ setup-keys:
 	@echo "Setting up authorized keys..."
 	sudo ./setup-authorized-keys.sh
 
+# Check log rotation
+check-logs:
+	@echo "Checking log rotation status..."
+	sudo ./check-log-rotation.sh status
+
+# Test log rotation
+test-logs:
+	@echo "Testing log rotation..."
+	sudo ./check-log-rotation.sh test
+
+# Force log rotation
+rotate-logs:
+	@echo "Forcing log rotation..."
+	sudo ./check-log-rotation.sh rotate
+
 # Clean temporary files
 clean:
 	@echo "Cleaning temporary files..."
@@ -116,6 +131,9 @@ help:
 	@echo "  debug           - Debug key detection issues"
 	@echo "  show-config     - Show current configuration"
 	@echo "  logs            - View SSH Alert logs in real-time"
+	@echo "  check-logs      - Check log rotation status"
+	@echo "  test-logs       - Test log rotation configuration"
+	@echo "  rotate-logs     - Force log rotation"
 	@echo "  clean           - Clean temporary files"
 	@echo "  check-requirements - Check system requirements"
 	@echo "  backup          - Backup current configuration"

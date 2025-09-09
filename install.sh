@@ -79,6 +79,9 @@ install_files() {
     cp ssh-alert-enhanced.sh "$INSTALL_DIR/"
     cp key-parser.py "$INSTALL_DIR/"
     
+    # Copy additional files if they exist
+    [[ -f "logrotate.conf" ]] && cp logrotate.conf "$INSTALL_DIR/"
+    
     # Copy configuration template
     cp config.conf "$CONFIG_DIR/config.conf.template"
     
@@ -153,22 +156,52 @@ EOF
 setup_log_rotation() {
     print_info "Setting up log rotation..."
     
-    cat > "/etc/logrotate.d/ssh-alert" << EOF
+    # Copy logrotate configuration
+    if [[ -f "logrotate.conf" ]]; then
+        cp "logrotate.conf" "/etc/logrotate.d/ssh-alert"
+        print_success "Log rotation configuration copied"
+    else
+        # Fallback configuration
+        cat > "/etc/logrotate.d/ssh-alert" << 'EOF'
 /var/log/ssh-alert.log {
     daily
-    missingok
     rotate 30
     compress
     delaycompress
     notifempty
     create 644 root root
+    missingok
+    copytruncate
+    minsize 100k
+    maxsize 10M
     postrotate
         # No need to reload anything for this log
     endscript
 }
+
+/tmp/ssh-alert-rate-limit/* {
+    daily
+    rotate 7
+    nocompress
+    notifempty
+    nocreate
+    missingok
+    olddir /tmp/ssh-alert-rate-limit/old
+    postrotate
+        # Remove old directory if empty
+        rmdir /tmp/ssh-alert-rate-limit/old 2>/dev/null || true
+    endscript
+}
 EOF
+        print_success "Log rotation configured (fallback)"
+    fi
     
-    print_success "Log rotation configured"
+    # Test logrotate configuration
+    if logrotate -d /etc/logrotate.d/ssh-alert >/dev/null 2>&1; then
+        print_success "Log rotation configuration is valid"
+    else
+        print_warning "Log rotation configuration test failed, but continuing..."
+    fi
 }
 
 # Interactive configuration
