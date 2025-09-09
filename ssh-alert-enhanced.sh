@@ -10,7 +10,7 @@ set -euo pipefail
 
 # Script configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_FILE="${SCRIPT_DIR}/config.conf"
+CONFIG_FILE="/etc/ssh-alert/config.conf"
 LOCK_FILE="/tmp/ssh-alert.lock"
 RATE_LIMIT_DIR="/tmp/ssh-alert-rate-limit"
 KEY_PARSER="${SCRIPT_DIR}/key-parser.py"

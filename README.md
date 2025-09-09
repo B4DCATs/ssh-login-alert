@@ -189,7 +189,13 @@ sudo tail -f /var/log/ssh-alert.log
 
 ### Частые проблемы
 
-1. **Уведомления не приходят**:
+1. **Ошибки после установки**:
+   ```bash
+   # Если видите ошибки типа "[[ not found" или "config.conf not found"
+   sudo ./fix-installation.sh
+   ```
+
+2. **Уведомления не приходят**:
    ```bash
    # Проверьте токен и chat_id
    sudo grep -E "TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID" /etc/ssh-alert/config.conf
@@ -198,7 +204,7 @@ sudo tail -f /var/log/ssh-alert.log
    sudo tail -f /var/log/ssh-alert.log
    ```
 
-2. **Скрипт не запускается**:
+3. **Скрипт не запускается**:
    ```bash
    # Проверьте права доступа
    ls -la /opt/ssh-alert/ssh-alert-enhanced.sh
@@ -207,7 +213,7 @@ sudo tail -f /var/log/ssh-alert.log
    bash -n /opt/ssh-alert/ssh-alert-enhanced.sh
    ```
 
-3. **Python ошибки**:
+4. **Python ошибки**:
    ```bash
    # Проверьте версию Python
    python3 --version

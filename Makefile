@@ -23,6 +23,11 @@ test:
 	sudo python3 -m py_compile key-parser.py
 	@echo "Configuration test passed"
 
+# Fix installation issues
+fix:
+	@echo "Fixing SSH Alert installation issues..."
+	sudo ./fix-installation.sh
+
 # Setup authorized keys
 setup-keys:
 	@echo "Setting up authorized keys..."
@@ -82,6 +87,7 @@ help:
 	@echo "  install         - Install SSH Alert system"
 	@echo "  uninstall       - Uninstall SSH Alert system"
 	@echo "  test            - Test configuration and scripts"
+	@echo "  fix             - Fix installation issues"
 	@echo "  setup-keys      - Setup authorized keys with SSH_USER"
 	@echo "  show-config     - Show current configuration"
 	@echo "  logs            - View SSH Alert logs in real-time"

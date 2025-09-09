@@ -111,7 +111,7 @@ configure_ssh() {
 # This script runs on every SSH login
 
 # Only run for interactive sessions or when explicitly requested
-if [[ -n "${SSH_ALERT_DISABLED:-}" ]]; then
+if [ -n "${SSH_ALERT_DISABLED:-}" ]; then
     exit 0
 fi
 
