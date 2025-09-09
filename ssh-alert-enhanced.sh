@@ -343,7 +343,7 @@ send_ssh_alert() {
     local ssh_user=$(echo "$connection_info" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('ssh_user', ''))")
     
     # Fix username if it's None or unknown
-    if [[ "$username" == "None" || "$username" == "unknown" ]]; then
+    if [[ "$username" == "None" || "$username" == "unknown" || -z "$username" ]]; then
         username=$(whoami)
     fi
     
@@ -387,8 +387,9 @@ send_ssh_alert() {
             ;;
     esac
     
-    # Rate limiting
-    local rate_key="${ip_address}_${key_fingerprint}"
+    # Rate limiting - sanitize key for filename
+    local sanitized_fingerprint=$(echo "$key_fingerprint" | sed 's/[^a-zA-Z0-9]/_/g')
+    local rate_key="${ip_address}_${sanitized_fingerprint}"
     local rate_limit_seconds="${RATE_LIMIT_PER_IP:-300}"
     
     if [[ "$connection_type" == "Tunnel" ]]; then
