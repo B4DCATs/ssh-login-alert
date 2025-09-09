@@ -258,17 +258,21 @@ class AuthLogParser:
                 return None
             
             lines = result.stdout.split('\n')
+            logger.debug(f"Found {len(lines)} lines in journald")
             
             # Look for recent SSH connection
             for line in reversed(lines):
-                if self._is_ssh_connection_line(line, ip_address, username):
+                if line.strip() and self._is_ssh_connection_line(line, ip_address, username):
+                    logger.debug(f"Found SSH connection line: {line}")
                     return self._parse_ssh_connection_line(line)
             
             # If no exact match, try to find any recent connection from this IP
             for line in reversed(lines):
-                if ip_address in line and "Accepted" in line and "sshd" in line:
+                if line.strip() and ip_address in line and "Accepted" in line and "sshd" in line:
+                    logger.debug(f"Found SSH connection by IP: {line}")
                     return self._parse_ssh_connection_line(line)
             
+            logger.debug(f"No SSH connection found for IP {ip_address} and user {username}")
             return None
             
         except Exception as e:
@@ -328,6 +332,8 @@ class AuthLogParser:
         }
         
         try:
+            logger.debug(f"Parsing line: {line}")
+            
             # Extract fingerprint if present (various formats)
             fingerprint_patterns = [
                 r'RSA SHA256:([A-Za-z0-9+/=]+)',
@@ -342,6 +348,7 @@ class AuthLogParser:
                 fingerprint_match = re.search(pattern, line)
                 if fingerprint_match:
                     result['fingerprint'] = fingerprint_match.group(1)
+                    logger.debug(f"Found fingerprint: {result['fingerprint']}")
                     break
             
             # Extract key data (base64 part) - this is more reliable than fingerprint
@@ -357,12 +364,14 @@ class AuthLogParser:
                 key_data_match = re.search(pattern, line)
                 if key_data_match:
                     result['key_data'] = key_data_match.group(1)
+                    logger.debug(f"Found key data: {result['key_data'][:20]}...")
                     break
             
             # Extract key type
             key_type_match = re.search(r'(RSA|ECDSA|ED25519|DSA)', line)
             if key_type_match:
                 result['key_type'] = key_type_match.group(1)
+                logger.debug(f"Found key type: {result['key_type']}")
             
             # Extract authentication method
             if 'publickey' in line:
@@ -371,6 +380,8 @@ class AuthLogParser:
                 result['auth_method'] = 'password'
             elif 'keyboard-interactive' in line:
                 result['auth_method'] = 'keyboard-interactive'
+            
+            logger.debug(f"Parsed result: {result}")
             
         except Exception as e:
             logger.error(f"Error parsing SSH connection line: {e}")
