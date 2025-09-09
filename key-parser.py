@@ -117,24 +117,56 @@ class SSHKeyParser:
             connection_info = auth_parser.find_recent_ssh_connection(ip_address, username)
             
             if connection_info and connection_info.get('fingerprint') != 'unknown':
-                return self.find_key_by_fingerprint(connection_info['fingerprint'])
+                found_key = self.find_key_by_fingerprint(connection_info['fingerprint'])
+                if found_key:
+                    return found_key
             
-            # If no fingerprint found, try to get the most recent key used
-            # This is a fallback method
-            if os.path.exists(self.authorized_keys_path):
-                with open(self.authorized_keys_path, 'r') as f:
+            # If no fingerprint found or key not found, try alternative methods
+            # Method 1: Use key_data from connection_info if available
+            if connection_info and connection_info.get('key_data') != 'unknown':
+                found_key = self._find_key_by_data(connection_info['key_data'])
+                if found_key:
+                    return found_key
+            
+            # Method 2: Look for the most recent connection in auth log and try to match by key data
+            if os.path.exists(self.auth_log_path):
+                with open(self.auth_log_path, 'r') as f:
                     lines = f.readlines()
-                    # Return the first key as fallback
-                    for line in lines:
-                        if line.strip() and not line.startswith('#'):
-                            key_info = self._parse_authorized_key_line(line.strip())
-                            if key_info:
-                                return key_info
+                    recent_lines = lines[-100:] if len(lines) > 100 else lines
+                    
+                    # Look for the most recent connection from this IP
+                    for line in reversed(recent_lines):
+                        if ip_address in line and "Accepted" in line and "sshd" in line:
+                            # Parse the line to get key data
+                            parsed_line = auth_parser._parse_ssh_connection_line(line)
+                            if parsed_line.get('key_data') != 'unknown':
+                                found_key = self._find_key_by_data(parsed_line['key_data'])
+                                if found_key:
+                                    return found_key
             
+            # Method 2: If still no key found, return None instead of fallback
+            # This prevents showing wrong key information
             return None
             
         except Exception as e:
             logger.error(f"Error finding key by IP and user: {e}")
+            return None
+    
+    def _find_key_by_data(self, key_data: str) -> Optional[Dict]:
+        """Find key by its data (base64 part)."""
+        try:
+            if not os.path.exists(self.authorized_keys_path):
+                return None
+                
+            with open(self.authorized_keys_path, 'r') as f:
+                for line in f:
+                    if line.strip() and not line.startswith('#'):
+                        parts = line.strip().split()
+                        if len(parts) >= 2 and parts[1] == key_data:
+                            return self._parse_authorized_key_line(line.strip())
+            return None
+        except Exception as e:
+            logger.error(f"Error finding key by data: {e}")
             return None
     
     def get_key_comment(self, fingerprint: str) -> str:
@@ -211,7 +243,8 @@ class AuthLogParser:
         result = {
             'fingerprint': 'unknown',
             'key_type': 'unknown',
-            'auth_method': 'unknown'
+            'auth_method': 'unknown',
+            'key_data': 'unknown'
         }
         
         try:
@@ -229,6 +262,21 @@ class AuthLogParser:
                 fingerprint_match = re.search(pattern, line)
                 if fingerprint_match:
                     result['fingerprint'] = fingerprint_match.group(1)
+                    break
+            
+            # Extract key data (base64 part) - this is more reliable than fingerprint
+            key_data_patterns = [
+                r'key ([A-Za-z0-9+/=]{50,})',  # Look for long base64 strings
+                r'RSA ([A-Za-z0-9+/=]{50,})',
+                r'ED25519 ([A-Za-z0-9+/=]{50,})',
+                r'ECDSA ([A-Za-z0-9+/=]{50,})',
+                r'DSA ([A-Za-z0-9+/=]{50,})'
+            ]
+            
+            for pattern in key_data_patterns:
+                key_data_match = re.search(pattern, line)
+                if key_data_match:
+                    result['key_data'] = key_data_match.group(1)
                     break
             
             # Extract key type
@@ -265,6 +313,11 @@ class SSHConnectionDetector:
             'port': 'unknown',
             'client_version': 'unknown'
         }
+        
+        # Debug: log environment variables
+        logger.debug(f"Environment USER: {os.environ.get('USER', 'NOT_SET')}")
+        logger.debug(f"Environment LOGNAME: {os.environ.get('LOGNAME', 'NOT_SET')}")
+        logger.debug(f"Environment SSH_USER: {os.environ.get('SSH_USER', 'NOT_SET')}")
         
         # Get IP address
         info['ip_address'] = SSHConnectionDetector._get_source_ip()
@@ -323,6 +376,11 @@ class SSHConnectionDetector:
         ssh_user = os.environ.get('SSH_USER')
         if ssh_user:
             return ssh_user
+        
+        # Try to get from environment
+        username = os.environ.get('USER') or os.environ.get('LOGNAME')
+        if username:
+            return username
         
         # Fall back to whoami
         try:

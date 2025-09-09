@@ -322,6 +322,11 @@ send_ssh_alert() {
     local connection_type=$(echo "$connection_info" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('connection_type', 'unknown'))")
     local ssh_user=$(echo "$connection_info" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('ssh_user', ''))")
     
+    # Fix username if it's None or unknown
+    if [[ "$username" == "None" || "$username" == "unknown" ]]; then
+        username=$(whoami)
+    fi
+    
     # Parse key info
     local key_fingerprint=$(echo "$key_info" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('fingerprint', 'unknown'))")
     local key_comment=$(echo "$key_info" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('comment', 'unknown'))")
