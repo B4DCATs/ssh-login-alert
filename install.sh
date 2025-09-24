@@ -81,6 +81,7 @@ install_files() {
     
     # Copy additional files if they exist
     [[ -f "logrotate.conf" ]] && cp logrotate.conf "$INSTALL_DIR/"
+    [[ -f "manage-exclusions.sh" ]] && cp manage-exclusions.sh "$INSTALL_DIR/"
     
     # Copy configuration template
     cp config.conf "$CONFIG_DIR/config.conf.template"
@@ -89,6 +90,7 @@ install_files() {
     chmod +x "$INSTALL_DIR/ssh-alert.sh"
     chmod +x "$INSTALL_DIR/ssh-alert-enhanced.sh"
     chmod +x "$INSTALL_DIR/key-parser.py"
+    [[ -f "$INSTALL_DIR/manage-exclusions.sh" ]] && chmod +x "$INSTALL_DIR/manage-exclusions.sh"
     
     # Set ownership
     chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"

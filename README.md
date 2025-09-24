@@ -118,6 +118,33 @@ sudo ./setup-authorized-keys.sh
 environment="SSH_USER=alice@example.com" ssh-rsa AAAAB3NzaC1yc2E... alice@laptop
 ```
 
+### Исключения ключей из уведомлений
+
+Для автоматизированных подключений (пайплайны, мониторинг) можно исключить определенные ключи из уведомлений:
+
+```bash
+# Добавить исключение
+sudo ./manage-exclusions.sh add "pipeline@ci"
+sudo ./manage-exclusions.sh add "deploy@automation"
+
+# Просмотреть текущие исключения
+sudo ./manage-exclusions.sh list
+
+# Удалить исключение
+sudo ./manage-exclusions.sh remove "pipeline@ci"
+
+# Очистить все исключения
+sudo ./manage-exclusions.sh clear
+```
+
+**Примеры использования:**
+- `pipeline@ci` - для CI/CD пайплайнов
+- `deploy@automation` - для автоматического деплоя
+- `monitoring@system` - для систем мониторинга
+- `backup@cron` - для автоматических бэкапов
+
+**Примечание:** Исключения работают по комментариям ключей в `authorized_keys`. Ключи с указанными комментариями не будут вызывать уведомления.
+
 ## 📱 Создание Telegram бота
 
 1. **Создайте бота**:
@@ -145,6 +172,12 @@ sudo /opt/ssh-alert/ssh-alert-enhanced.sh
 sudo /opt/ssh-alert/check-log-rotation.sh status    # Проверить статус ротации
 sudo /opt/ssh-alert/check-log-rotation.sh test      # Тестировать конфигурацию
 sudo /opt/ssh-alert/check-log-rotation.sh rotate    # Принудительная ротация
+
+# Управление исключениями
+sudo ./manage-exclusions.sh list                    # Показать текущие исключения
+sudo ./manage-exclusions.sh add "pipeline@ci"       # Добавить исключение
+sudo ./manage-exclusions.sh remove "pipeline@ci"    # Удалить исключение
+sudo ./manage-exclusions.sh clear                   # Очистить все исключения
 
 # Удаление
 sudo /opt/ssh-alert/uninstall.sh

@@ -132,6 +132,31 @@ ip_in_range() {
     esac
 }
 
+# Check if key comment should be excluded from alerts
+is_key_excluded() {
+    local key_comment="$1"
+    
+    # If no exclusions configured, allow all
+    if [[ -z "${EXCLUDED_KEY_COMMENTS:-}" ]]; then
+        return 1
+    fi
+    
+    # Check if key comment is in the exclusion list
+    IFS=',' read -ra EXCLUDED <<< "$EXCLUDED_KEY_COMMENTS"
+    for excluded_comment in "${EXCLUDED[@]}"; do
+        # Trim whitespace
+        excluded_comment=$(echo "$excluded_comment" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        
+        # Check for exact match or wildcard match
+        if [[ "$key_comment" == "$excluded_comment" ]] || [[ "$key_comment" == *"$excluded_comment"* ]]; then
+            log_debug "Key comment '$key_comment' is excluded from alerts"
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
 # Enhanced connection information gathering
 get_connection_info() {
     if [[ ! -f "$KEY_PARSER" ]]; then
@@ -365,6 +390,12 @@ send_ssh_alert() {
     # Skip local IPs if configured
     if is_local_ip "$ip_address"; then
         log_debug "Skipping notification for local IP: $ip_address"
+        return 0
+    fi
+    
+    # Check if key comment is excluded from alerts
+    if is_key_excluded "$key_comment"; then
+        log_debug "Skipping notification for excluded key comment: $key_comment"
         return 0
     fi
     
