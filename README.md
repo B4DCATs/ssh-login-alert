@@ -1,55 +1,55 @@
 # SSH Alert - Secure SSH Connection Monitoring
 
-Безопасная и надёжная утилита для отслеживания SSH-подключений к серверу с отправкой уведомлений в Telegram.
+A secure and reliable utility for monitoring SSH connections to a server with Telegram notifications.
 
-## 🚀 Возможности
+## 🚀 Features
 
-- **Максимальная идентификация пользователя**: IP-адрес, fingerprint ключа, комментарий ключа, тип подключения
-- **Гибкие уведомления**: Разделение звуковых и тихих сообщений для разных типов подключений
-- **Надёжность**: Предотвращение дублированных уведомлений при параллельных сессиях
-- **Retry логика**: Автоматические повторы при сбоях сети или Telegram API
-- **Гибкая конфигурация**: Настройка через конфигурационный файл
-- **Безопасность**: Минимальные зависимости, работа без изменений SSH-клиентов
+- **Maximum user identification**: IP address, key fingerprint, key comment, connection type
+- **Flexible notifications**: Separate sound and silent messages for different connection types
+- **Reliability**: Prevention of duplicate notifications during parallel sessions
+- **Retry logic**: Automatic retries on network or Telegram API failures
+- **Flexible configuration**: Configuration through config file
+- **Security**: Minimal dependencies, works without SSH client modifications
 
-## 📋 Требования
+## 📋 Requirements
 
-- Linux сервер с OpenSSH
-- Python 3.6+е,
+- Linux server with OpenSSH
+- Python 3.6+
 - curl
 - bash 4.0+
-- Права root для установки
+- Root privileges for installation
 
-## 🛠 Установка
+## 🛠 Installation
 
-### Быстрая установка
+### Quick Installation
 
 ```bash
-# Клонируйте репозиторий
+# Clone the repository
 git clone https://github.com/B4DCATs/ssh-login-alert
 cd ssh-login-alert
 
-# Запустите установку
+# Run the installation
 sudo ./install.sh
 ```
 
-**После установки репозиторий можно удалить:**
+**After installation, the repository can be removed:**
 ```bash
-# После успешной установки
+# After successful installation
 cd ..
 rm -rf ssh-login-alert
 ```
 
-### Что происходит при установке
+### What happens during installation
 
-1. **Копируются файлы** в `/opt/ssh-alert/` и `/etc/ssh-alert/`
-2. **Настраивается SSH** интеграция через `/etc/ssh/sshrc`
-3. **Создается конфигурация** ротации логов
-4. **Запускается интерактивная настройка** Telegram
-5. **Тестируется конфигурация**
+1. **Files are copied** to `/opt/ssh-alert/` and `/etc/ssh-alert/`
+2. **SSH integration** is configured through `/etc/ssh/sshrc`
+3. **Log rotation configuration** is created
+4. **Interactive Telegram setup** is launched
+5. **Configuration is tested**
 
-### Ручная установка (если нужно)
+### Manual Installation (if needed)
 
-1. **Скопируйте файлы**:
+1. **Copy files**:
    ```bash
    sudo mkdir -p /opt/ssh-alert /etc/ssh-alert
    sudo cp ssh-alert-enhanced.sh /opt/ssh-alert/
@@ -60,7 +60,7 @@ rm -rf ssh-login-alert
    sudo chmod +x /opt/ssh-alert/*.py
    ```
 
-2. **Настройте SSH**:
+2. **Configure SSH**:
    ```bash
    sudo tee /etc/ssh/sshrc > /dev/null << 'EOF'
    #!/bin/bash
@@ -73,16 +73,16 @@ rm -rf ssh-login-alert
    sudo chmod +x /etc/ssh/sshrc
    ```
 
-3. **Настройте конфигурацию**:
+3. **Configure settings**:
    ```bash
    sudo nano /etc/ssh-alert/config.conf
    ```
 
-## ⚙️ Конфигурация
+## ⚙️ Configuration
 
-### Основные настройки
+### Basic Settings
 
-Отредактируйте файл `/etc/ssh-alert/config.conf`:
+Edit the file `/etc/ssh-alert/config.conf`:
 
 ```bash
 # Telegram Bot Configuration
@@ -104,94 +104,94 @@ RATE_LIMIT_PER_IP=300
 RATE_LIMIT_PER_KEY=60
 ```
 
-### Настройка authorized_keys
+### authorized_keys Configuration
 
-Для максимальной идентификации пользователей настройте `authorized_keys`:
+For maximum user identification, configure `authorized_keys`:
 
 ```bash
 sudo ./setup-authorized-keys.sh
 ```
 
-Или вручную добавьте `SSH_USER` в ключи:
+Or manually add `SSH_USER` to keys:
 
 ```
 environment="SSH_USER=alice@example.com" ssh-rsa AAAAB3NzaC1yc2E... alice@laptop
 ```
 
-### Исключения ключей из уведомлений
+### Key Exclusions from Notifications
 
-Для автоматизированных подключений (пайплайны, мониторинг) можно исключить определенные ключи из уведомлений:
+For automated connections (pipelines, monitoring), you can exclude certain keys from notifications:
 
 ```bash
-# Добавить исключение
+# Add exclusion
 sudo ./manage-exclusions.sh add "pipeline@ci"
 sudo ./manage-exclusions.sh add "deploy@automation"
 
-# Просмотреть текущие исключения
+# View current exclusions
 sudo ./manage-exclusions.sh list
 
-# Удалить исключение
+# Remove exclusion
 sudo ./manage-exclusions.sh remove "pipeline@ci"
 
-# Очистить все исключения
+# Clear all exclusions
 sudo ./manage-exclusions.sh clear
 ```
 
-**Примеры использования:**
-- `pipeline@ci` - для CI/CD пайплайнов
-- `deploy@automation` - для автоматического деплоя
-- `monitoring@system` - для систем мониторинга
-- `backup@cron` - для автоматических бэкапов
+**Usage examples:**
+- `pipeline@ci` - for CI/CD pipelines
+- `deploy@automation` - for automatic deployment
+- `monitoring@system` - for monitoring systems
+- `backup@cron` - for automatic backups
 
-**Примечание:** Исключения работают по комментариям ключей в `authorized_keys`. Ключи с указанными комментариями не будут вызывать уведомления.
+**Note:** Exclusions work by key comments in `authorized_keys`. Keys with specified comments will not trigger notifications.
 
-## 📱 Создание Telegram бота
+## 📱 Creating a Telegram Bot
 
-1. **Создайте бота**:
-   - Отправьте `/newbot` боту [@BotFather](https://t.me/BotFather)
-   - Следуйте инструкциям для создания бота
-   - Сохраните полученный токен
+1. **Create a bot**:
+   - Send `/newbot` to [@BotFather](https://t.me/BotFather)
+   - Follow the instructions to create a bot
+   - Save the received token
 
-2. **Получите Chat ID**:
-   - Добавьте бота в чат или отправьте ему сообщение
-   - Перейдите по ссылке: `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates`
-   - Найдите `chat.id` в ответе
+2. **Get Chat ID**:
+   - Add the bot to a chat or send it a message
+   - Go to the link: `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates`
+   - Find `chat.id` in the response
 
-## 🔧 Использование
+## 🔧 Usage
 
-### Основные команды
+### Basic Commands
 
 ```bash
-# Просмотр логов
+# View logs
 sudo tail -f /var/log/ssh-alert.log
 
-# Тестирование конфигурации
+# Test configuration
 sudo /opt/ssh-alert/ssh-alert-enhanced.sh
 
-# Управление логами
-sudo /opt/ssh-alert/check-log-rotation.sh status    # Проверить статус ротации
-sudo /opt/ssh-alert/check-log-rotation.sh test      # Тестировать конфигурацию
-sudo /opt/ssh-alert/check-log-rotation.sh rotate    # Принудительная ротация
+# Log management
+sudo /opt/ssh-alert/check-log-rotation.sh status    # Check rotation status
+sudo /opt/ssh-alert/check-log-rotation.sh test      # Test configuration
+sudo /opt/ssh-alert/check-log-rotation.sh rotate    # Force rotation
 
-# Управление исключениями
-sudo ./manage-exclusions.sh list                    # Показать текущие исключения
-sudo ./manage-exclusions.sh add "pipeline@ci"       # Добавить исключение
-sudo ./manage-exclusions.sh remove "pipeline@ci"    # Удалить исключение
-sudo ./manage-exclusions.sh clear                   # Очистить все исключения
+# Exclusion management
+sudo ./manage-exclusions.sh list                    # Show current exclusions
+sudo ./manage-exclusions.sh add "pipeline@ci"       # Add exclusion
+sudo ./manage-exclusions.sh remove "pipeline@ci"    # Remove exclusion
+sudo ./manage-exclusions.sh clear                   # Clear all exclusions
 
-# Удаление
+# Uninstall
 sudo /opt/ssh-alert/uninstall.sh
 ```
 
-### Типы уведомлений
+### Notification Types
 
-SSH Alert различает следующие типы подключений:
+SSH Alert distinguishes the following connection types:
 
-- **Interactive shell** - Интерактивная сессия (по умолчанию с звуком)
-- **Tunnel** - SSH туннель (по умолчанию без звука)
-- **Command execution** - Выполнение команды (настраивается)
+- **Interactive shell** - Interactive session (default with sound)
+- **Tunnel** - SSH tunnel (default without sound)
+- **Command execution** - Command execution (configurable)
 
-### Пример уведомления
+### Notification Example
 
 ```
 🔐 SSH Login Alert:
@@ -204,158 +204,158 @@ Key: SHA256:abcd1234...
 Time: 2024-01-15 14:30:25 UTC
 ```
 
-## 🛡 Безопасность
+## 🛡 Security
 
-### Рекомендации
+### Recommendations
 
-1. **Ограничьте доступ к конфигурации**:
+1. **Restrict access to configuration**:
    ```bash
    sudo chmod 600 /etc/ssh-alert/config.conf
    sudo chown root:root /etc/ssh-alert/config.conf
    ```
 
-2. **Настройте файрвол**:
+2. **Configure firewall**:
    ```bash
-   # Разрешите SSH только с доверенных IP
+   # Allow SSH only from trusted IPs
    sudo ufw allow from 192.168.1.0/24 to any port 22
    ```
 
-3. **Используйте ключи вместо паролей**:
+3. **Use keys instead of passwords**:
    ```bash
    sudo nano /etc/ssh/sshd_config
-   # Установите: PasswordAuthentication no
+   # Set: PasswordAuthentication no
    sudo systemctl restart sshd
    ```
 
-### Логирование
+### Logging
 
-SSH Alert ведёт подробные логи:
+SSH Alert maintains detailed logs:
 
 ```bash
-# Просмотр логов
+# View logs
 sudo tail -f /var/log/ssh-alert.log
 
-# JSON логирование (опционально)
-# Установите JSON_LOGGING=true в config.conf
+# JSON logging (optional)
+# Set JSON_LOGGING=true in config.conf
 ```
 
-### Ротация логов
+### Log Rotation
 
-SSH Alert автоматически настраивает ротацию логов через `logrotate`:
+SSH Alert automatically configures log rotation through `logrotate`:
 
 ```bash
-# Проверить статус ротации
+# Check rotation status
 make check-logs
 
-# Тестировать конфигурацию ротации
+# Test rotation configuration
 make test-logs
 
-# Принудительная ротация
+# Force rotation
 make rotate-logs
 
-# Ручная проверка
+# Manual check
 sudo ./check-log-rotation.sh status
 ```
 
-**Настройки ротации:**
-- 📅 **Ежедневная ротация** логов
-- 📦 **30 дней** хранения сжатых логов
-- 🗜️ **Сжатие** старых логов
-- 📏 **Минимальный размер** 100KB для ротации
-- 📏 **Максимальный размер** 10MB для принудительной ротации
-- 🧹 **Очистка** временных файлов rate limiting
+**Rotation settings:**
+- 📅 **Daily rotation** of logs
+- 📦 **30 days** of compressed log storage
+- 🗜️ **Compression** of old logs
+- 📏 **Minimum size** 100KB for rotation
+- 📏 **Maximum size** 10MB for forced rotation
+- 🧹 **Cleanup** of rate limiting temporary files
 
-## 🔍 Устранение неполадок
+## 🔍 Troubleshooting
 
-### Частые проблемы
+### Common Issues
 
-1. **Ошибки после установки**:
+1. **Post-installation errors**:
    ```bash
-   # Если видите ошибки типа "[[ not found" или "config.conf not found"
+   # If you see errors like "[[ not found" or "config.conf not found"
    sudo ./fix-installation.sh
    ```
 
-2. **Уведомления не приходят**:
+2. **Notifications not arriving**:
    ```bash
-   # Проверьте токен и chat_id
+   # Check token and chat_id
    sudo grep -E "TELEGRAM_BOT_TOKEN|TELEGRAM_CHAT_ID" /etc/ssh-alert/config.conf
    
-   # Проверьте логи
+   # Check logs
    sudo tail -f /var/log/ssh-alert.log
    ```
 
-3. **Скрипт не запускается**:
+3. **Script not starting**:
    ```bash
-   # Проверьте права доступа
+   # Check permissions
    ls -la /opt/ssh-alert/ssh-alert-enhanced.sh
    
-   # Проверьте синтаксис
+   # Check syntax
    bash -n /opt/ssh-alert/ssh-alert-enhanced.sh
    ```
 
-4. **Python ошибки**:
+4. **Python errors**:
    ```bash
-   # Проверьте версию Python
+   # Check Python version
    python3 --version
    
-   # Тестируйте парсер
+   # Test parser
    python3 /opt/ssh-alert/key-parser.py get-info
    ```
 
-### Отладка
+### Debugging
 
-Включите отладочные логи:
+Enable debug logs:
 
 ```bash
 sudo nano /etc/ssh-alert/config.conf
-# Установите: LOG_LEVEL="DEBUG"
+# Set: LOG_LEVEL="DEBUG"
 ```
 
-## 📊 Мониторинг
+## 📊 Monitoring
 
-### Проверка работы
+### System Check
 
 ```bash
-# Статус системы
+# System status
 sudo systemctl status ssh-alert 2>/dev/null || echo "Service not installed"
 
-# Активные подключения
+# Active connections
 sudo ss -tnp | grep sshd
 
-# Последние уведомления
+# Recent notifications
 sudo grep "SSH alert sent" /var/log/ssh-alert.log | tail -5
 ```
 
-### Метрики
+### Metrics
 
-SSH Alert может интегрироваться с системами мониторинга через JSON логи:
+SSH Alert can integrate with monitoring systems through JSON logs:
 
 ```bash
-# Включите JSON логирование
+# Enable JSON logging
 echo 'JSON_LOGGING=true' | sudo tee -a /etc/ssh-alert/config.conf
 
-# Парсинг логов
+# Parse logs
 sudo tail -f /var/log/ssh-alert.log | jq '.'
 ```
 
-## 🔄 Обновление
+## 🔄 Updates
 
-### Автоматическое обновление
+### Automatic Update
 
 ```bash
-# Обновить из репозитория
+# Update from repository
 git pull origin main
 sudo ./install.sh
 ```
 
-### Ручное обновление
+### Manual Update
 
 ```bash
-# Создайте резервную копию
+# Create backup
 sudo cp -r /opt/ssh-alert /opt/ssh-alert.backup
 sudo cp /etc/ssh-alert/config.conf /etc/ssh-alert/config.conf.backup
 
-# Обновите файлы
+# Update files
 sudo cp ssh-alert-enhanced.sh /opt/ssh-alert/
 sudo cp key-parser.py /opt/ssh-alert/
 sudo cp uninstall.sh /opt/ssh-alert/
@@ -363,67 +363,67 @@ sudo cp check-log-rotation.sh /opt/ssh-alert/
 sudo cp logrotate.conf /etc/logrotate.d/ssh-alert
 ```
 
-## 🗑️ Удаление
+## 🗑️ Uninstallation
 
-### Полное удаление
+### Complete Removal
 
 ```bash
-# Запустите скрипт удаления
+# Run the uninstall script
 sudo /opt/ssh-alert/uninstall.sh
 ```
 
-### Что удаляется
+### What gets removed
 
-- ✅ Все файлы SSH Alert
-- ✅ SSH интеграция из `/etc/ssh/sshrc`
-- ✅ Systemd служба
-- ✅ Конфигурация ротации логов
-- ✅ Временные файлы и кэш
-- ✅ Создаются резервные копии
+- ✅ All SSH Alert files
+- ✅ SSH integration from `/etc/ssh/sshrc`
+- ✅ Systemd service
+- ✅ Log rotation configuration
+- ✅ Temporary files and cache
+- ✅ Backup copies are created
 
-### Ручное удаление
+### Manual Removal
 
 ```bash
-# Остановить процессы
+# Stop processes
 sudo pkill -f ssh-alert
 
-# Удалить файлы
+# Remove files
 sudo rm -rf /opt/ssh-alert
 sudo rm -rf /etc/ssh-alert
 
-# Очистить SSH интеграцию
+# Clear SSH integration
 sudo rm -f /etc/ssh/sshrc
 
-# Удалить временные файлы
+# Remove temporary files
 sudo rm -f /tmp/ssh-alert.lock
 sudo rm -rf /tmp/ssh-alert-rate-limit
 ```
 
-## 📝 Лицензия
+## 📝 License
 
-Этот проект распространяется под лицензией MIT. См. файл `LICENSE` для подробностей.
+This project is distributed under the MIT license. See the `LICENSE` file for details.
 
-## 🤝 Вклад в проект
+## 🤝 Contributing
 
-1. Форкните репозиторий
-2. Создайте ветку для новой функции (`git checkout -b feature/amazing-feature`)
-3. Зафиксируйте изменения (`git commit -m 'Add amazing feature'`)
-4. Отправьте в ветку (`git push origin feature/amazing-feature`)
-5. Откройте Pull Request
+1. Fork the repository
+2. Create a branch for a new feature (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## 📞 Поддержка
+## 📞 Support
 
-Если у вас возникли проблемы или вопросы:
+If you encounter problems or have questions:
 
-1. Проверьте [раздел устранения неполадок](#устранение-неполадок)
-2. Создайте [Issue](https://github.com/your-repo/ssh-alert/issues)
-3. Обратитесь к документации
+1. Check the [troubleshooting section](#troubleshooting)
+2. Create an [Issue](https://github.com/your-repo/ssh-alert/issues)
+3. Refer to the documentation
 
-## 🔮 Планы развития
+## 🔮 Development Roadmap
 
-- [ ] Поддержка других мессенджеров (Slack, Discord)
-- [ ] Веб-интерфейс для управления
-- [ ] Интеграция с SIEM системами
-- [ ] Машинное обучение для обнаружения аномалий
-- [ ] Поддержка IPv6
-- [ ] Расширенная аналитика подключений
+- [ ] Support for other messengers (Slack, Discord)
+- [ ] Web interface for management
+- [ ] Integration with SIEM systems
+- [ ] Machine learning for anomaly detection
+- [ ] IPv6 support
+- [ ] Advanced connection analytics
