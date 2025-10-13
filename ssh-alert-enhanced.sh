@@ -157,6 +157,56 @@ is_key_excluded() {
     return 1
 }
 
+# Check if IP address should be excluded from alerts
+is_ip_excluded() {
+    local ip_address="$1"
+    
+    # If no exclusions configured, allow all
+    if [[ -z "${EXCLUDED_IPS:-}" ]]; then
+        return 1
+    fi
+    
+    # Check if IP is in the exclusion list
+    IFS=',' read -ra EXCLUDED <<< "$EXCLUDED_IPS"
+    for excluded_ip in "${EXCLUDED[@]}"; do
+        # Trim whitespace
+        excluded_ip=$(echo "$excluded_ip" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        
+        # Check for exact match
+        if [[ "$ip_address" == "$excluded_ip" ]]; then
+            log_debug "IP address '$ip_address' is excluded from alerts"
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
+# Check if username should be excluded from alerts
+is_username_excluded() {
+    local username="$1"
+    
+    # If no exclusions configured, allow all
+    if [[ -z "${EXCLUDED_USERNAMES:-}" ]]; then
+        return 1
+    fi
+    
+    # Check if username is in the exclusion list
+    IFS=',' read -ra EXCLUDED <<< "$EXCLUDED_USERNAMES"
+    for excluded_user in "${EXCLUDED[@]}"; do
+        # Trim whitespace
+        excluded_user=$(echo "$excluded_user" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        
+        # Check for exact match
+        if [[ "$username" == "$excluded_user" ]]; then
+            log_debug "Username '$username' is excluded from alerts"
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
 # Enhanced connection information gathering
 get_connection_info() {
     if [[ ! -f "$KEY_PARSER" ]]; then
@@ -390,6 +440,18 @@ send_ssh_alert() {
     # Skip local IPs if configured
     if is_local_ip "$ip_address"; then
         log_debug "Skipping notification for local IP: $ip_address"
+        return 0
+    fi
+    
+    # Check if IP address is excluded from alerts
+    if is_ip_excluded "$ip_address"; then
+        log_info "Skipping notification for excluded IP address: $ip_address"
+        return 0
+    fi
+    
+    # Check if username is excluded from alerts
+    if is_username_excluded "$username"; then
+        log_info "Skipping notification for excluded username: $username"
         return 0
     fi
     

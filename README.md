@@ -123,32 +123,72 @@ Or manually add `SSH_USER` to keys:
 environment="SSH_USER=alice@example.com" ssh-rsa AAAAB3NzaC1yc2E... alice@laptop
 ```
 
-### Key Exclusions from Notifications
+### Exclusions from Notifications
 
-For automated connections (pipelines, monitoring), you can exclude certain keys from notifications:
+For automated connections (pipelines, monitoring, CI/CD runners), you can exclude connections from notifications using three methods:
+
+#### 1. Key Comment Exclusions
+
+Exclude SSH keys by their comment in `authorized_keys`:
 
 ```bash
-# Add exclusion
-sudo ./manage-exclusions.sh add "pipeline@ci"
-sudo ./manage-exclusions.sh add "deploy@automation"
+# Add key comment exclusion
+sudo ./manage-exclusions.sh add key "pipeline@ci"
+sudo ./manage-exclusions.sh add key "deploy@automation"
 
-# View current exclusions
+# Remove key comment exclusion
+sudo ./manage-exclusions.sh remove key "pipeline@ci"
+```
+
+#### 2. IP Address Exclusions
+
+Exclude connections from specific IP addresses (useful for password-based runners):
+
+```bash
+# Add IP exclusion
+sudo ./manage-exclusions.sh add ip "192.168.1.100"
+sudo ./manage-exclusions.sh add ip "10.0.0.50"
+
+# Remove IP exclusion
+sudo ./manage-exclusions.sh remove ip "192.168.1.100"
+```
+
+#### 3. Username Exclusions
+
+Exclude connections by username:
+
+```bash
+# Add username exclusion
+sudo ./manage-exclusions.sh add user "gitlab-runner"
+sudo ./manage-exclusions.sh add user "jenkins"
+
+# Remove username exclusion
+sudo ./manage-exclusions.sh remove user "gitlab-runner"
+```
+
+#### Managing Exclusions
+
+```bash
+# View all exclusions
 sudo ./manage-exclusions.sh list
 
-# Remove exclusion
-sudo ./manage-exclusions.sh remove "pipeline@ci"
+# View specific type
+sudo ./manage-exclusions.sh list key
+sudo ./manage-exclusions.sh list ip
+sudo ./manage-exclusions.sh list user
 
-# Clear all exclusions
-sudo ./manage-exclusions.sh clear
+# Clear all exclusions of a type
+sudo ./manage-exclusions.sh clear key
+sudo ./manage-exclusions.sh clear ip
+sudo ./manage-exclusions.sh clear user
 ```
 
 **Usage examples:**
-- `pipeline@ci` - for CI/CD pipelines
-- `deploy@automation` - for automatic deployment
-- `monitoring@system` - for monitoring systems
-- `backup@cron` - for automatic backups
+- **Key comments**: `pipeline@ci`, `deploy@automation`, `monitoring@system`
+- **IP addresses**: `192.168.1.100`, `10.0.0.50`, GitLab Runner IP
+- **Usernames**: `gitlab-runner`, `jenkins`, `deploy-bot`
 
-**Note:** Exclusions work by key comments in `authorized_keys`. Keys with specified comments will not trigger notifications.
+**Note:** Changes take effect immediately for new connections. IP and username exclusions are perfect for CI/CD runners that connect via password authentication.
 
 ## 📱 Creating a Telegram Bot
 
@@ -179,10 +219,12 @@ sudo /opt/ssh-alert/check-log-rotation.sh test      # Test configuration
 sudo /opt/ssh-alert/check-log-rotation.sh rotate    # Force rotation
 
 # Exclusion management
-sudo ./manage-exclusions.sh list                    # Show current exclusions
-sudo ./manage-exclusions.sh add "pipeline@ci"       # Add exclusion
-sudo ./manage-exclusions.sh remove "pipeline@ci"    # Remove exclusion
-sudo ./manage-exclusions.sh clear                   # Clear all exclusions
+sudo ./manage-exclusions.sh list                    # Show all exclusions
+sudo ./manage-exclusions.sh add key "pipeline@ci"   # Add key exclusion
+sudo ./manage-exclusions.sh add ip "192.168.1.100"  # Add IP exclusion
+sudo ./manage-exclusions.sh add user "gitlab-runner" # Add user exclusion
+sudo ./manage-exclusions.sh remove key "pipeline@ci" # Remove key exclusion
+sudo ./manage-exclusions.sh clear key               # Clear key exclusions
 
 # Uninstall
 sudo /opt/ssh-alert/uninstall.sh
